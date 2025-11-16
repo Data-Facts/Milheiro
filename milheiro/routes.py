@@ -12,6 +12,23 @@ from .scraper import SearchQuery, search_availability
 api_blueprint = Blueprint("milheiro", __name__)
 
 
+@api_blueprint.route("/", methods=["GET"])
+def index() -> Any:
+    """Return a simple payload that documents the available endpoints."""
+    return (
+        jsonify(
+            {
+                "service": "Milheiro API",
+                "endpoints": {
+                    "healthcheck": "/healthz",
+                    "scraper": "/scraper?origin=GRU&destination=MIA&date=2024-07-01",
+                },
+            }
+        ),
+        HTTPStatus.OK,
+    )
+
+
 @api_blueprint.route("/healthz", methods=["GET"])
 def healthcheck() -> Any:
     """Basic health-check endpoint used by Render."""

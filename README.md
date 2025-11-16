@@ -16,9 +16,15 @@ pip install -r requirements.txt
 ## Como executar localmente
 
 ```bash
+# opção 1: iniciar via flask cli
 export FLASK_APP=wsgi:app
 flask run --debug
+
+# opção 2: executar diretamente o app
+python app.py
 ```
+
+Ao subir, a página raiz (`/`) retorna um pequeno JSON descrevendo os endpoints dispo\níveis para facilitar a validação manual.
 
 Endpoints disponíveis:
 
