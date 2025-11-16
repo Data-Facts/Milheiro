@@ -70,19 +70,26 @@ curl http://127.0.0.1:5000/healthz
 curl "http://127.0.0.1:5000/scraper?origin=GRU&destination=MIA&date=2024-07-01"
 ```
 
-## Deploy no Render
+## Deploy como microserviço no Render
 
-1. Faça um fork ou envie este repositório para o GitHub.
-2. No dashboard do Render clique em **New +** → **Blueprint** e informe a URL do repositório.
-3. Confirme o uso do `render.yaml` deste projeto.
-4. Em **Environment Variables**, configure os valores desejados (por exemplo `SCRAPER_MIN_SEATS`).
-5. Crie o serviço. O Render executará automaticamente:
-   - `pip install -r requirements.txt` durante o build;
-   - `gunicorn wsgi:app` como comando de inicialização.
-6. Quando o deploy terminar, teste:
+> O Render trata cada Web Service como um microserviço independente. O passo a passo abaixo cria um serviço dedicado para esta API, sem depender de blueprints ou múltiplos processos.
+
+1. **Publique o código** – envie este repositório para o GitHub/GitLab/Bitbucket (o Render só consome desses provedores).
+2. **Crie o Web Service** – no painel do Render clique em **New + → Web Service** e selecione o repositório publicado.
+3. **Configure o runtime**
+   - *Environment*: `Python`
+   - *Region/Plan*: escolha conforme sua conta (o plano Free suporta este app).
+4. **Defina os comandos**
+   - *Build Command*: `pip install -r requirements.txt`
+   - *Start Command*: `gunicorn wsgi:app`
+5. **Adicione as variáveis de ambiente** (mesmas descritas acima, como `SCRAPER_MIN_SEATS`, `SCRAPER_APPLICABLE_CABIN`, etc.).
+6. **Finalize** clicando em *Create Web Service*. O Render fará o primeiro deploy automaticamente.
+7. **Valide** quando o status estiver “Live”:
 
 ```bash
-curl "https://<sua-instancia>.onrender.com/scraper?origin=GRU&destination=MIA&date=2024-07-01"
+curl "https://<seu-servico>.onrender.com/scraper?origin=GRU&destination=MIA&date=2024-07-01"
 ```
 
-O arquivo `render.yaml` garante que você reproduza o mesmo processo em outros ambientes compatíveis com contêineres (Railway, Fly.io, etc.) bastando manter o mesmo comando de inicialização.
+### Automatizando com render.yaml (opcional)
+
+Se preferir versionar a configuração, mantenha o `render.yaml` incluso neste repositório. Ao criar o serviço via **New + → Blueprint**, o Render lerá o arquivo e preencherá os mesmos comandos descritos acima. Isso facilita reproduzir o microserviço em outros ambientes compatíveis com blueprints.
