@@ -5,7 +5,6 @@ from dataclasses import dataclass
 import os
 from typing import Any, Dict, Iterable, List, Mapping, Optional
 
-import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 
@@ -23,6 +22,17 @@ USER_AGENT = (
     "Chrome/123.0.0.0 Safari/537.36"
 )
 HTTP_TIMEOUT = int(os.getenv("HTTP_TIMEOUT", "30"))
+COLUMN_NAMES = [
+    "Data",
+    "Ultima_Visualizacao",
+    "Programa",
+    "Origem",
+    "Destino",
+    "Economica",
+    "Premium",
+    "Executiva",
+    "PrimeiraClasse",
+]
 
 _SESSION = requests.Session()
 _SESSION.headers.update({"User-Agent": USER_AGENT})
@@ -85,23 +95,21 @@ def _extract_table_rows(html: str) -> List[List[str]]:
 
 
 def _rows_to_records(rows: Iterable[Iterable[str]]) -> List[Dict[str, str]]:
-    df = pd.DataFrame(rows)
-    if df.empty:
-        return []
-    df = df.iloc[:, :9]
-    df = df.drop_duplicates()
-    df.columns = [
-        "Data",
-        "Ultima_Visualizacao",
-        "Programa",
-        "Origem",
-        "Destino",
-        "Economica",
-        "Premium",
-        "Executiva",
-        "PrimeiraClasse",
-    ]
-    return df.to_dict(orient="records")
+    records: List[Dict[str, str]] = []
+    seen: set[tuple[str, ...]] = set()
+
+    for row in rows:
+        trimmed = list(row)[: len(COLUMN_NAMES)]
+        if not trimmed:
+            continue
+        fingerprint = tuple(trimmed)
+        if fingerprint in seen:
+            continue
+        seen.add(fingerprint)
+        record = {column: value for column, value in zip(COLUMN_NAMES, trimmed)}
+        records.append(record)
+
+    return records
 
 
 def _fetch_html(
@@ -139,4 +147,4 @@ def search_availability(
     return _rows_to_records(rows)
 
 
-__all__ = ["SearchQuery", "search_availability"]
+__all__ = ["SearchQuery", "search_availability", "DEFAULT_PARAMS", "BASE_URL", "HTTP_TIMEOUT"]

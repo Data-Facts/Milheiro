@@ -1,4 +1,4 @@
-"""WSGI entry point for Render."""
-from milheiro import create_app
+"""WSGI entry point for Render deployments."""
+from app import app
 
-app = create_app()
+__all__ = ["app"]
