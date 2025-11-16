@@ -3,14 +3,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import os
-from typing import Dict, Iterable, List
+from typing import Any, Dict, Iterable, List, Mapping, Optional
 
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 
 BASE_URL = os.getenv("SEATS_AERO_URL", "https://seats.aero/search")
-DEFAULT_PARAMS = {
+DEFAULT_PARAMS: Dict[str, Any] = {
     "min_seats": 1,
     "applicable_cabin": "any",
     "additional_days": "true",
@@ -36,9 +36,10 @@ class SearchQuery:
     origin: str
     destination: str
 
-    def as_params(self) -> Dict[str, str]:
+    def as_params(self, defaults: Optional[Mapping[str, Any]] = None) -> Dict[str, Any]:
         """Return the query as request parameters."""
-        params = DEFAULT_PARAMS.copy()
+
+        params = dict(defaults or DEFAULT_PARAMS)
         params.update(
             {
                 "date": self.date,
@@ -103,15 +104,37 @@ def _rows_to_records(rows: Iterable[Iterable[str]]) -> List[Dict[str, str]]:
     return df.to_dict(orient="records")
 
 
-def _fetch_html(query: SearchQuery) -> str:
-    response = _SESSION.get(BASE_URL, params=query.as_params(), timeout=HTTP_TIMEOUT)
+def _fetch_html(
+    query: SearchQuery,
+    *,
+    base_url: str,
+    timeout: int,
+    default_params: Mapping[str, Any],
+) -> str:
+    response = _SESSION.get(
+        base_url,
+        params=query.as_params(defaults=default_params),
+        timeout=timeout,
+    )
     response.raise_for_status()
     return response.text
 
 
-def search_availability(query: SearchQuery) -> List[Dict[str, str]]:
+def search_availability(
+    query: SearchQuery,
+    *,
+    base_url: str | None = None,
+    timeout: int | None = None,
+    default_params: Optional[Mapping[str, Any]] = None,
+) -> List[Dict[str, Any]]:
     """Return seat availability for the provided query."""
-    html = _fetch_html(query)
+
+    html = _fetch_html(
+        query,
+        base_url=base_url or BASE_URL,
+        timeout=timeout or HTTP_TIMEOUT,
+        default_params=default_params or DEFAULT_PARAMS,
+    )
     rows = _extract_table_rows(html)
     return _rows_to_records(rows)
 
